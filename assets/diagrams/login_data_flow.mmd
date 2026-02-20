@@ -1,0 +1,39 @@
+flowchart LR
+  %% Main wiring
+  Main["main.dart\n(App start)"] --> ApiHelper["ApiHelper"]
+  Main --> AuthLocal["AuthLocalDataSourceImpl\n(SharedPreferences)"]
+  Main --> UserRepo["UserRepositoryImpl\n(apiHelper, authLocal)"]
+  Main --> GetSaved["GetSavedUserUseCase\n(userRepository)"]
+  Main --> SessionBloc["SessionBloc\n(getSavedUserUseCase)"]
+  Main --> LoginBloc["LoginBloc\n(userRepository, sessionBloc)"]
+  Main --> RegisterBloc["RegisterBloc\n(userRepository)"]
+
+  %% App startup: session load
+  SessionBloc -.->|add LoadUserFromPrefsEvent() on create| GetSaved
+  GetSaved -->|calls repository.getSavedUser()| UserRepo
+  UserRepo -->|delegates to| AuthLocal
+  AuthLocal --> SharedPrefs["SharedPreferences\n(user_json, token)"]
+  AuthLocal -->|returns user json| GetSaved
+  GetSaved -->|user json or null| SessionBloc
+  SessionBloc -->|emit authenticated / unauthenticated| UI["UI / Router"]
+
+  %% Login flow
+  UILogin["LoginForm (UI)"] -->|LoginSubmittedEvent| LoginBloc
+  LoginBloc -->|calls loginUser(email,password)| UserRepo
+  UserRepo -->|ApiHelper.postApi(...)| ApiHelper
+  ApiHelper -->|HTTP POST| Server["Auth Server (API)"]
+  Server -->|200 { status: 'success', data: {..., jwt_token}}| ApiHelper
+  ApiHelper -->|returns parsed JSON| UserRepo
+  UserRepo -->|on success: saveToken/saveUser| AuthLocal
+  AuthLocal -->|writes token,user| SharedPrefs
+  UserRepo -->|returns response| LoginBloc
+  LoginBloc -->|create UserModel and emit success| UI
+  LoginBloc -->|session update| SessionBloc
+  SessionBloc -->|emit authenticated| UI
+
+  %% Subsequent API calls
+  UI -->|user action| SomeFeatureBloc
+  SomeFeatureBloc -->|ApiHelper.getApi() uses getToken()| ApiHelper
+  ApiHelper -->|reads token from| SharedPrefs
+  SharedPrefs -->|provides token| ApiHelper
+  ApiHelper -->|sends Authorization: Bearer <token>| Server
