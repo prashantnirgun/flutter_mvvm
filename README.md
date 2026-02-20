@@ -54,7 +54,7 @@ login
         "full_name": "Prashant Nirgun.",
         "mobile": "9223588456",
         "user_status": "Active",
-        "email": "prashant.nirgun@gmail.com",
+        "email": "mail@gmail.com",
         "email_verified": "Yes",
         "jwt_token": "$2b$10$SlHTwkXiWlgUCHntux3ozOsjYiMTitgzRFC09P5mQ.Rqi3pVCEspy",
         "session": "0edcdfc1-dd95-4040-b92c-b9e2fc7852d3",
