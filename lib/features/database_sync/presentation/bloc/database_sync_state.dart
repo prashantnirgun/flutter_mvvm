@@ -1,13 +1,29 @@
-abstract class DatabaseSyncState {}
+import 'package:equatable/equatable.dart';
 
-class DatabaseSyncInitial extends DatabaseSyncState {}
+abstract class DatabaseSyncState extends Equatable {
+  const DatabaseSyncState();
 
-class DatabaseSyncLoading extends DatabaseSyncState {}
+  @override
+  List<Object?> get props => [];
+}
 
-class DatabaseSyncSuccess extends DatabaseSyncState {}
+class DatabaseSyncInitial extends DatabaseSyncState {
+  const DatabaseSyncInitial();
+}
+
+class DatabaseSyncLoading extends DatabaseSyncState {
+  const DatabaseSyncLoading();
+}
+
+class DatabaseSyncSuccess extends DatabaseSyncState {
+  const DatabaseSyncSuccess();
+}
 
 class DatabaseSyncFailure extends DatabaseSyncState {
   final String message;
 
-  DatabaseSyncFailure(this.message);
+  const DatabaseSyncFailure(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

@@ -1,18 +1,14 @@
 // SharedPreferences moved to data layer; LoginBloc only handles state.
-import 'package:bpp/features/authentication/domain/repositories/user_repository.dart';
+import 'package:bpp/features/authentication/domain/usecases/login_user_usecase.dart';
 import 'package:bpp/features/authentication/presentation/bloc/login/login_event.dart';
 import 'package:bpp/features/authentication/presentation/bloc/login/login_state.dart';
 import 'package:bpp/features/authentication/data/models/user_model.dart';
-import 'package:bpp/features/authentication/presentation/bloc/session/session_block.dart';
-import 'package:bpp/features/authentication/presentation/bloc/session/session_event.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
-  final UserRepository userRepository;
-  final SessionBloc? sessionBloc;
+  final LoginUserUseCase loginUserUseCase;
 
-  LoginBloc(this.userRepository, {this.sessionBloc})
-    : super(const LoginState()) {
+  LoginBloc({required this.loginUserUseCase}) : super(const LoginState()) {
     on<LoginSubmittedEvent>(_onLoginSubmitted);
   }
 
@@ -23,34 +19,22 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(state.copyWith(status: LoginStatus.loading));
 
     try {
-      final res = await userRepository.loginUser(
+      final res = await loginUserUseCase(
         email: event.email,
         password: event.password,
       );
-
-      // If the repository indicates success, move to success state.
-      // We keep this minimal — UI can react to `status` and `user` if needed.
-      if (res is Map && res['status'] == 'success') {
-        // Extract user from response data and emit success. Persistence
-        // is handled in the data layer (`AuthLocalDataSource`).
-        final data = res['data'] != null && res['data'] is Map
-            ? Map<String, dynamic>.from(res['data'])
-            : <String, dynamic>{};
-
-        final user = data.isNotEmpty ? UserModel.fromJson(data) : null;
-
-        // Notify session bloc (if injected) to update in-memory session state
-        sessionBloc?.add(FetchUserEvent(user: user));
-
+      // Repository should return a `UserModel` on success, or an error Map on failure.
+      if (res is UserModel) {
+        //print('what is res $res');
+        final user = res;
         emit(state.copyWith(status: LoginStatus.success, user: user));
       } else {
+        //print('opps not a user model type $res');
+        final message = res is Map
+            ? (res['message']?.toString() ?? 'Login failed')
+            : 'Login failed';
         emit(
-          state.copyWith(
-            status: LoginStatus.failure,
-            errorMessage: res is Map
-                ? (res['message']?.toString() ?? 'Login failed')
-                : 'Login failed',
-          ),
+          state.copyWith(status: LoginStatus.failure, errorMessage: message),
         );
       }
     } catch (e) {

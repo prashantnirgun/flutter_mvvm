@@ -1,17 +1,27 @@
-import 'package:bpp/core/constants/app_urls.dart';
-import 'package:bpp/core/network/api_helper.dart';
-import 'package:bpp/core/constants/app_constant.dart';
-import 'package:bpp/features/authentication/data/datasources/auth_local_data_source.dart';
-import 'package:bpp/features/authentication/domain/repositories/user_repository.dart';
+import '../../../core/constants/app_urls.dart';
+import '../../../core/network/api_helper.dart';
+import '../../../core/constants/app_constant.dart';
+import '../../authentication/data/datasources/auth_local_data_source.dart';
+import '../../authentication/data/datasources/user_remote_data_source.dart';
+import '../../authentication/data/models/user_model.dart';
+import '../../authentication/domain/repositories/user_repository.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final ApiHelper apiHelper;
   final AuthLocalDataSource authLocalDataSource;
+  final UserRemoteDataSource userRemoteDataSource;
 
   UserRepositoryImpl({
     required this.apiHelper,
     required this.authLocalDataSource,
+    required this.userRemoteDataSource,
   });
+
+  @override
+  Future<bool> logoutUser() async {
+    await authLocalDataSource.clear();
+    return true;
+  }
 
   @override
   Future<dynamic> registerUser({
@@ -22,21 +32,21 @@ class UserRepositoryImpl implements UserRepository {
     required String password,
   }) async {
     try {
-      return await apiHelper.postApi(
-        url: AppUrls.registrationUrl,
-        mBodyParams: {
-          "email": email,
-          "full_name": fullName,
-          "user_name": userName,
-          "mobile": mobile,
-          "password": password,
-          "email_verified": "No",
-          "user_status": "Active",
-        },
-        isAuth: true,
+      final response = await userRemoteDataSource.registerUser(
+        fullName: fullName,
+        userName: userName,
+        email: email,
+        mobile: mobile,
+        password: password,
       );
-    } catch (e) {
-      rethrow;
+
+      return response;
+    } catch (e, st) {
+      return {
+        'status': 'error',
+        'message': e.toString(),
+        'stack': st.toString(),
+      };
     }
   }
 
@@ -63,14 +73,23 @@ class UserRepositoryImpl implements UserRepository {
 
         final token = (data['jwt_token'] ?? data['token'] ?? '').toString();
 
+        // remove sensitive fields before persisting
+        final sanitized = Map<String, dynamic>.from(data);
+        sanitized.remove('password');
+        sanitized.remove('jwt_token');
+
         try {
           if (token.isNotEmpty) {
             await authLocalDataSource.saveToken(token);
           }
-          if (data.isNotEmpty) {
-            await authLocalDataSource.saveUser(data);
+          if (sanitized.isNotEmpty) {
+            await authLocalDataSource.saveUser(sanitized);
           }
         } catch (_) {}
+
+        // convert to model and return
+        final user = UserModel.fromJson(sanitized);
+        return user;
       }
 
       return response;
@@ -98,28 +117,13 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<bool> userExists(String userName) async {
+  Future<bool> userExists(String columnName, String value) async {
     try {
-      final url = "${AppUrls.userExistsUrl}?user_name=$userName";
-      final response = await apiHelper.getApi(url: url);
-
-      // Expected shapes (be defensive):
-      // 1) { "exists": true }
-      // 2) { "status": "success", "data": { "exists": true } }
-      // 3) boolean `true`/`false`
-      if (response is bool) return response;
-      if (response is Map) {
-        if (response.containsKey('exists')) {
-          return response['exists'] == true;
-        }
-        if (response['status'] == 'success' && response['data'] is Map) {
-          final data = Map<String, dynamic>.from(response['data']);
-          if (data.containsKey('exists')) return data['exists'] == true;
-        }
-      }
-
-      // Unknown response format — default to `false` (available)
-      return false;
+      final exists = await userRemoteDataSource.checkUserExists(
+        columnName,
+        value,
+      );
+      return exists;
     } catch (e) {
       rethrow;
     }

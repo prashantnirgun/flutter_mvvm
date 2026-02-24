@@ -5,14 +5,17 @@ import 'package:bpp/features/authentication/presentation/bloc/session/session_ev
 import 'package:bpp/features/authentication/presentation/bloc/session/session_state.dart';
 import 'package:bpp/features/authentication/domain/usecases/get_saved_user_usecase.dart';
 import 'package:bpp/features/authentication/data/models/user_model.dart';
+import 'package:bpp/features/authentication/domain/usecases/logout_user_usecase.dart';
 
 class SessionBloc extends Bloc<SessionEvent, SessionState> {
   final GetSavedUserUseCase getSavedUserUseCase;
+  final LogoutUserUseCase logoutUserUseCase;
 
   /// SessionBloc manages authentication state (authenticated/unauthenticated)
   /// and the currently loaded `UserModel` in memory. It reads persisted
   /// session data via the provided `GetSavedUserUseCase` when constructed.
-  SessionBloc(this.getSavedUserUseCase) : super(const SessionState()) {
+  SessionBloc(this.getSavedUserUseCase, this.logoutUserUseCase)
+    : super(const SessionState()) {
     on<LoadUserFromPrefsEvent>(_onLoadUserFromPrefs);
     on<FetchUserEvent>(_onFetchUser);
     on<LogoutUserEvent>(_onLogoutUser);
@@ -60,6 +63,8 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
     LogoutUserEvent event,
     Emitter<SessionState> emit,
   ) async {
+    // call use case
+    await logoutUserUseCase();
     emit(state.copyWith(status: SessionStatus.unauthenticated, user: null));
   }
 }

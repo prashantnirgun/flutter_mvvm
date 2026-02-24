@@ -1,10 +1,12 @@
-class UserDataModel {
+import 'package:equatable/equatable.dart';
+
+class UserDataModel extends Equatable {
   final bool success;
   final String message;
   //final List<UserModel> data;
   final UserModel? data;
 
-  UserDataModel({
+  const UserDataModel({
     required this.success,
     required this.message,
     required this.data,
@@ -31,9 +33,12 @@ class UserDataModel {
       'data': data?.toJson(), // ✅ single object
     };
   }
+
+  @override
+  List<Object?> get props => [success, message, data];
 }
 
-class UserModel {
+class UserModel extends Equatable {
   final int id;
   final String fullName;
   final String userName;
@@ -45,7 +50,7 @@ class UserModel {
   final String userGroupName;
   final String emailVerified;
 
-  UserModel({
+  const UserModel({
     required this.id,
     required this.fullName,
     required this.userName,
@@ -86,4 +91,7 @@ class UserModel {
       'email_verified': emailVerified,
     };
   }
+
+  @override
+  List<Object?> get props => [id, uuid, fullName, userName, email];
 }

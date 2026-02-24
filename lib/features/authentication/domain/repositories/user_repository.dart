@@ -1,10 +1,14 @@
 /// Domain layer: repository interface
 /// Keep this file free of platform or framework dependencies.
 abstract class UserRepository {
-  /// Returns `true` if the [userName] already exists on the server.
-  /// Implementations should translate data-layer errors into domain-level failures
-  /// according to the project's error handling (Either/Failure or exceptions).
-  Future<bool> userExists(String userName);
+  /// Returns `true` if the value for [columnName] already exists on the server.
+  ///
+  /// Example: `userExists('email', 'foo@bar.com')` or
+  /// `userExists('user_name', 'alice')`.
+  /// Implementations should translate data-layer errors into domain-level
+  /// failures according to the project's error handling (Either/Failure or
+  /// exceptions).
+  Future<bool> userExists(String columnName, String value);
 
   Future<dynamic> registerUser({
     required String fullName,
@@ -15,6 +19,7 @@ abstract class UserRepository {
   });
 
   Future<dynamic> loginUser({required String email, required String password});
+  Future<bool> logoutUser();
 
   Future<dynamic> fetchUsers();
 

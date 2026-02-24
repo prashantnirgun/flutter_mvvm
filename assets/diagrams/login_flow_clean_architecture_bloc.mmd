@@ -1,0 +1,35 @@
+
+flowchart LR
+
+subgraph PRESENTATION
+UI[UI: User taps Login]
+Event[Bloc Event: LoginEvent]
+Bloc[Bloc: Handles Event & Emits State]
+end
+
+subgraph DOMAIN
+UseCase[UseCase: LoginUseCase]
+RepoInterface[Repository Interface: AuthRepository]
+Entity[Entity: User]
+end
+
+subgraph DATA
+RepoImpl[Repository Implementation]
+DataSource[Remote Data Source]
+API[API Server]
+Model[Model converts JSON to Entity]
+end
+
+UI --> Event
+Event --> Bloc
+Bloc --> UseCase
+UseCase --> RepoInterface
+RepoInterface --> RepoImpl
+RepoImpl --> DataSource
+DataSource --> API
+API --> Model
+Model --> RepoImpl
+RepoImpl --> RepoInterface
+RepoInterface --> UseCase
+UseCase --> Bloc
+Bloc --> UI

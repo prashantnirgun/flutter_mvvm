@@ -1,6 +1,6 @@
 class AppUrls {
   ///https://ecommerceapi.projectnest.online/ecommerce-api/user/registration
-  static const String baseUrl = "http://example.com/api/";
+  static const String baseUrl = "http://example/com/api/";
   static const String registrationUrl = "${baseUrl}users/sign-up";
   static const String loginUrl = "${baseUrl}users/sign-in";
 

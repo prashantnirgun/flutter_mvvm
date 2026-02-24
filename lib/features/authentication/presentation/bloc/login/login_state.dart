@@ -1,8 +1,9 @@
+import 'package:equatable/equatable.dart';
 import 'package:bpp/features/authentication/data/models/user_model.dart';
 
 enum LoginStatus { initial, loading, success, failure }
 
-class LoginState {
+class LoginState extends Equatable {
   final LoginStatus status;
   final UserModel? user;
   final String? errorMessage;
@@ -24,4 +25,7 @@ class LoginState {
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
+
+  @override
+  List<Object?> get props => [status, user, errorMessage];
 }

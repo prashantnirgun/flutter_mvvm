@@ -1,14 +1,20 @@
-import 'package:bpp/core/constants/app_constant.dart';
 import 'package:bpp/core/constants/app_urls.dart';
 import 'package:bpp/core/network/api_helper.dart';
 import 'package:bpp/features/authentication/data/datasources/auth_local_data_source.dart';
+import 'package:bpp/features/authentication/data/datasources/user_remote_data_source.dart';
+import 'package:bpp/features/authentication/data/models/user_model.dart';
 import 'package:bpp/features/authentication/domain/repositories/user_repository.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final ApiHelper apiHelper;
   final AuthLocalDataSource? authLocalDataSource;
+  final UserRemoteDataSource userRemoteDataSource;
 
-  UserRepositoryImpl({required this.apiHelper, this.authLocalDataSource});
+  UserRepositoryImpl({
+    required this.apiHelper,
+    this.authLocalDataSource,
+    required this.userRemoteDataSource,
+  });
 
   @override
   Future<dynamic> registerUser({
@@ -19,21 +25,24 @@ class UserRepositoryImpl implements UserRepository {
     required String password,
   }) async {
     try {
-      return await apiHelper.postApi(
-        url: AppUrls.registrationUrl,
-        mBodyParams: {
-          "email": email,
-          "full_name": fullName,
-          "user_name": userName,
-          "mobile": mobile,
-          "password": password,
-          "email_verified": "No",
-          "user_status": "Active",
-        },
-        isAuth: true,
+      // Delegate HTTP call to data source.
+      final response = await userRemoteDataSource.registerUser(
+        fullName: fullName,
+        userName: userName,
+        email: email,
+        mobile: mobile,
+        password: password,
       );
-    } catch (e) {
-      rethrow;
+
+      return response;
+    } catch (e, st) {
+      // Return a consistent failure Map so callers (Blocs/usecases)
+      // can handle errors without requiring try/catch.
+      return {
+        'status': 'error',
+        'message': e.toString(),
+        'stack': st.toString(),
+      };
     }
   }
 
@@ -43,35 +52,60 @@ class UserRepositoryImpl implements UserRepository {
     required String password,
   }) async {
     try {
-      dynamic response = await apiHelper.postApi(
-        url: AppUrls.loginUrl,
-        mBodyParams: {
-          "email": email,
-          "password": password,
-          "secretkey": AppConstants.API_KEY,
-        },
-        isAuth: true,
+      dynamic response = await userRemoteDataSource.loginUser(
+        email: email,
+        password: password,
       );
       // Persist token/user using local datasource when available.
-      if (response is Map &&
-          response['status'] == 'success' &&
-          authLocalDataSource != null) {
+      if (response is Map && response['status'] == 'success') {
         final data = response['data'] != null && response['data'] is Map
             ? Map<String, dynamic>.from(response['data'])
             : <String, dynamic>{};
 
-        final token = (data['jwt_token'] ?? data['token'] ?? '').toString();
+        // Persist token/user using local datasource when available.
+        final token = (data['jwt_token'] ?? '').toString();
+
+        //remove unwanted fields from response
+        Map<String, dynamic> sanitizeUserJson(Map<String, dynamic> json) {
+          final copy = Map<String, dynamic>.from(json);
+          copy.remove('password');
+          copy.remove('jwt_token');
+          return copy;
+        }
+
+        final userData = sanitizeUserJson(data);
         try {
-          if (token.isNotEmpty) {
-            await authLocalDataSource!.saveToken(token);
-          }
-          if (data.isNotEmpty) {
-            await authLocalDataSource!.saveUser(data);
+          if (authLocalDataSource != null) {
+            if (token.isNotEmpty) {
+              await authLocalDataSource!.saveToken(token);
+            }
+            if (data.isNotEmpty) {
+              await authLocalDataSource!.saveUser(sanitizeUserJson(userData));
+            }
           }
         } catch (_) {}
+
+        // Convert response data to domain model and return it.
+        final user = UserModel.fromJson(userData);
+        return user;
       }
 
       return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> logoutUser() async {
+    try {
+      //clear session
+      await authLocalDataSource?.clear();
+
+      // Persist token/user using local datasource when available.
+      //return boolean response
+
+      return true;
     } catch (e) {
       rethrow;
     }
@@ -97,21 +131,9 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<bool> userExists(String userName) async {
+  Future<bool> userExists(String columnName, String value) async {
     try {
-      final url = "${AppUrls.userExistsUrl}?user_name=$userName";
-      final response = await apiHelper.getApi(url: url);
-
-      if (response is Map) {
-        if (response.containsKey('exists')) {
-          return response['exists'] == true;
-        }
-        if (response['data'] is Map && response['data'].containsKey('exists')) {
-          return response['data']['exists'] == true;
-        }
-      }
-
-      return false;
+      return await userRemoteDataSource.checkUserExists(columnName, value);
     } catch (e) {
       rethrow;
     }

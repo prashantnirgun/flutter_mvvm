@@ -5,6 +5,23 @@ class UsernameChangedEvent extends RegisterEvent {
   UsernameChangedEvent(this.username);
 }
 
+/// Force an immediate check (skip debounce)
+class CheckUsernameNowEvent extends RegisterEvent {
+  final String username;
+  CheckUsernameNowEvent(this.username);
+}
+
+class EmailChangedEvent extends RegisterEvent {
+  final String email;
+  EmailChangedEvent(this.email);
+}
+
+/// Force an immediate email check (skip debounce)
+class CheckEmailNowEvent extends RegisterEvent {
+  final String email;
+  CheckEmailNowEvent(this.email);
+}
+
 class RegisterSubmittedEvent extends RegisterEvent {
   final String fullName;
   final String userName;

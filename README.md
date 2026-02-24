@@ -6,6 +6,13 @@
 flutter pub add flutter_bloc http intl shared_preferences curved_navigation_bar awesome_dialog introduction_screen
 ```
 
+Queries :
+
+- Need to understand the flow
+- I used Future<dynamic> but let say I am expecting a User or an error how do I handle this.
+
+## register user response
+
 ```
 {
     "success": true,
@@ -15,7 +22,7 @@ flutter pub add flutter_bloc http intl shared_preferences curved_navigation_bar 
         "user_group_id": 10,
         "manager_id": 7,
         "uuid": "eb3c9167-f01e-4dcb-819a-36449a203b9d",
-        "user_name": "prashant1",
+        "user_name": "prashant",
         "email": "abc@gmail.com",
         "full_name": "wrwrwer",
         "password": "$2b$10$EmTvWbTJ8YJG/RleF7aWH.d42kmynJ9X12rkf78fqaDr0zWVzIS4q",
@@ -42,7 +49,7 @@ flutter pub add flutter_bloc http intl shared_preferences curved_navigation_bar 
 }
 ```
 
-login
+## login response
 
 ```
 {
@@ -50,11 +57,11 @@ login
     "data": {
         "id": 1,
         "uuid": "35763a9b-1750-45a5-826c-c8e5f31e315f",
-        "user_name": "prashant",
-        "full_name": "Prashant Nirgun.",
+        "user_name": "hardik",
+        "full_name": "Hardik Pandya",
         "mobile": "9223588456",
         "user_status": "Active",
-        "email": "mail@gmail.com",
+        "email": "user@gmail.com",
         "email_verified": "Yes",
         "jwt_token": "$2b$10$SlHTwkXiWlgUCHntux3ozOsjYiMTitgzRFC09P5mQ.Rqi3pVCEspy",
         "session": "0edcdfc1-dd95-4040-b92c-b9e2fc7852d3",
